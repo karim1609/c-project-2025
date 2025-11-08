@@ -335,3 +335,170 @@ Student* student_list_get_student(StudentList* list, int index){
         return NULL;
     }
 }
+int student_validation_gpa(float gpa) {
+    if (gpa < 0.0 || gpa > 4.0) {
+        printf("GPA must be between 0.0 and 4.0\n");
+        return 0;
+    }
+    return 1;
+}
+
+int student_validation_email(const char* email) {
+    printf("Validation de l'email...\n");
+    return 1; // always accept for now, simple
+}
+
+int student_validation_phone(const char* phone) {
+    printf("Validation du téléphone...\n");
+    return 1; // always accept for now, simple
+}
+
+int student_validation_age(int age) {
+    if (age < 18 || age > 100) {
+        printf("Age must be between 18 and 100 years\n");
+        return 0;
+    }
+    return 1;
+}
+
+Student student_input_new() {
+    Student s;
+    int n;
+
+    printf("ID: ");
+    scanf("%d", &s.id);
+
+    printf("Nom: ");
+    scanf("%s", s.first_name);
+
+    printf("Prenom: ");
+    scanf("%s", s.last_name);
+
+    do {
+        printf("Email: ");
+        scanf("%s", s.email);
+        n = student_validation_email(s.email);
+    } while (n == 0);
+
+    do {
+        printf("Telephone: ");
+        scanf("%s", s.phone);
+        n = student_validation_phone(s.phone);
+    } while (n == 0);
+
+    do {
+        printf("Age: ");
+        scanf("%d", &s.age);
+        n = student_validation_age(s.age);
+    } while (n == 0);
+
+    printf("Filiere: ");
+    scanf(" %[^\n]", s.course);
+
+    printf("Adresse: ");
+    scanf(" %[^\n]", s.address);
+
+    printf("Year: ");
+    scanf("%d", &s.year);
+
+    do {
+        printf("GPA: ");
+        scanf("%f", &s.gpa);
+        n = student_validation_gpa(s.gpa);
+    } while (n == 0);
+
+    s.enrollment_date = time(0);
+    s.is_active = 1;
+
+    return s;
+}
+
+void student_input_edit(Student* student) {
+    int choice;
+    printf("\nEdit student info (for now: just select and re-enter value, no validation):\n");
+    printf("1 - Prenom\n");
+    printf("2 - Nom\n");
+    printf("3 - Email\n");
+    printf("4 - Telephone\n");
+    printf("5 - GPA\n");
+    printf("6 - Age\n");
+    printf("7 - Filiere\n");
+    printf("8 - Enrollment_date\n");
+    printf("9 - Is_active\n");
+    printf("10 - Adresse\n");
+    printf("11 - Year\n");
+    printf("12 - Modifier tout\n");
+    printf("0 - Annuler\n");
+    printf("Choix: ");
+    scanf("%d", &choice);
+    switch (choice) {
+        case 1:
+            printf("Nouveau prenom: ");
+            scanf("%s", student->last_name);
+            break;
+        case 2:
+            printf("Nouveau nom: ");
+            scanf("%s", student->first_name);
+            break;
+        case 3:
+            printf("Nouvel email: ");
+            scanf("%s", student->email);
+            break;
+        case 4:
+            printf("Nouveau telephone: ");
+            scanf("%s", student->phone);
+            break;
+        case 5:
+            printf("Nouveau GPA: ");
+            scanf("%f", &student->gpa);
+            break;
+        case 6:
+            printf("Nouvel age: ");
+            scanf("%d", &student->age);
+            break;
+        case 7:
+            printf("Nouvelle filiere: ");
+            scanf(" %[^\n]", student->course);
+            break;
+        case 8:
+            printf("Nouvelle enrollment_date (timestamp entier): ");
+            scanf("%ld", &student->enrollment_date);
+            break;
+        case 9:
+            printf("is_active (0/1): ");
+            scanf("%d", &student->is_active);
+            break;
+        case 10:
+            printf("Nouvelle adresse: ");
+            scanf(" %[^\n]", student->address);
+            break;
+        case 11:
+            printf("Nouvelle annee: ");
+            scanf("%d", &student->year);
+            break;
+        case 12:
+            printf("Modifier tout:\n");
+            *student = student_input_new();
+            break;
+        case 0:
+        default:
+            // Annuler ou choix invalide, ne rien faire
+            break;
+    }
+}
+
+void student_display_summary(StudentList* list) {
+    if (!list || list->count == 0) {
+        printf("Aucun étudiant à afficher.\n");
+        return;
+    }
+    printf("| ID  | Prenom          | Nom             | Email                   | Telephone     | GPA  | Age | Statut | Filiere        |\n");
+    printf("--------------------------------------------------------------------------------------------------------------\n");
+    for (int i = 0; i < list->count; i++) {
+        Student s = list->students[i];
+        printf("| %-3d | %-15s | %-15s | %-22s | %-12s | %-4.2f | %-3d | %-6d | %-14s |\n",
+               s.id, s.first_name, s.last_name, s.email, s.phone, s.gpa, s.age, s.is_active, s.course);
+    }
+    printf("--------------------------------------------------------------------------------------------------------------\n");
+    printf("Total: %d étudiant(s)\n", list->count);
+}
