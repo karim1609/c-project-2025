@@ -11,7 +11,7 @@
 #define MAX_ADDRESS_LENGTH 200
 #define MAX_COURSE_LENGTH 50
 #define MAX_CLUB_LENGTH 50
-
+#define MAX_CLUBS 15 
 // File paths
 #define DATA_DIR "data/"
 #define STUDENTS_FILE "students.enc"

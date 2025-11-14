@@ -12,6 +12,133 @@
 #include <stdlib.h>
 #include <string.h>
 
+ClubList* club_list_create(void){
+    clublist* list = (clublist*)malloc(sizeof(clubliste));
+    if(list == NULL){
+        printf("error: faild to create club list");
+        return NULL;
+    }
+    club *clubs = (club*)malloc(sizeof(club)*MAX_CLUBS);
+    if(clubs == NULL){
+        printf("error: faild to allocate memory for clubs");
+        free(list);
+        return NULL;
+    }
+    list->clubs = clubs;
+    list->count = 0;
+    list->capacity = MAX_CLUBS;
+    return list;    
+
+}
+void club_list_destroy(ClubList* list){
+    if(list == NULL){
+        return;
+    }
+    if(list->clubs != NULL){
+        free(list->clubs);
+    }
+    free(list);
+}
+
+int club_list_add(ClubList* list, Club new_club){
+    if(list == NULL){
+        return 0;
+    }
+    if(list->count >= list->capacity){
+        printf("error: club list is full");
+        return 0;
+    }
+    list->clubs[list->count] = new_club;
+    list->count++;
+    return 1;
+}
+int club_list_remove(ClubList* list, int club_id){
+    if(list == NULL){
+        return 0;
+    }
+    for(int i = 0; i < list->count; i++){
+        if(list->clubs[i].id == club_id){
+            for(int j = i; j < list->count - 1; j++){
+                list->clubs[j] = list->clubs[j + 1];
+            }
+            memset(&list->clubs[list->count - 1], 0, sizeof(Club));
+            list->count--;
+            return 1;
+        }
+        
+}
+Club* club_list_find_by_id(ClubList* list, int club_id){
+    if(list == NULL){
+        printf("list is null");
+        return NULL;
+    }
+    for(int i = 0; i < list->count; i++){
+        if(list->clubs[i].id == club_id){
+            return &list->clubs[i];
+        }
+    }
+    printf("club with id %d not found", club_id);
+    return NULL;
+}
+Club* club_list_find_by_name(ClubList* list, const char* name){
+    if(list == NULL){
+        printf("list is null");
+        return NULL;
+    }
+    for(int i = 0; i < list->count; i++){
+        if(strcmp(list->clubs[i].name, name) == 0){
+            return &list->clubs[i];
+        }
+    }
+    printf("club with name %s not found", name);
+    return NULL;
+} 
+void club_list_display_all(ClubList* list){
+    if(list == NULL){
+        printf("list is null");
+        return;
+    }
+  for(int i = 0; i < list->count; i++){
+    printf("\nClub %d:\n", i + 1);
+    printf("ID: %d\n", list->clubs[i].id);
+    printf("Name: %s\n", list->clubs[i].name);
+    printf("Description: %s\n", list->clubs[i].description);
+    printf("Category: %s\n", list->clubs[i].category);
+    printf("President ID: %d\n", list->clubs[i].president_id);
+    printf("Advisor ID: %d\n", list->clubs[i].advisor_id);
+    printf("Member Count: %d\n", list->clubs[i].member_count);
+    printf("Meeting Day: %s\n", list->clubs[i].meeting_day);
+    printf("Meeting Time: %s\n", list->clubs[i].meeting_time);
+    printf("Meeting Location: %s\n", list->clubs[i].meeting_location);
+    printf("Is Active: %d\n", list->clubs[i].is_active);
+    printf("--------------------\n");
+  }
+}
+void club_list_display_club(Club* club){
+    if(club == NULL){
+        printf("club is null");
+        return;
+    }
+    printf("\nClub information:\n");
+    printf("ID: %d\n", club->id);
+    printf("Name: %s\n", club->name);
+    printf("Description: %s\n", club->description);
+    printf("Category: %s\n", club->category);
+    printf("President ID: %d\n", club->president_id);
+    printf("Advisor ID: %d\n", club->advisor_id);
+    printf("Member Count: %d\n", club->member_count);
+    printf("Meeting Day: %s\n", club->meeting_day);
+    printf("Meeting Time: %s\n", club->meeting_time);
+    printf("Meeting Location: %s\n", club->meeting_location);
+    printf("Is Active: %d\n", club->is_active);
+    printf("--------------------\n");
+}
+
+
+
+
+
+
 
 
 int club_list_save_to_file(ClubList* list, const char* filename) {
