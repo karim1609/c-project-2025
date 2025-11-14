@@ -12,7 +12,86 @@
 #include <stdlib.h>
 #include <string.h>
 
+MembershipList* membership_list_create(void) {
+    MembershipList* list = (MembershipList*)malloc(sizeof(MembershipList));
+    if (!list) {
+        printf("error: could not allocate memory for membership list\n");
+        return NULL;
+    }
+    list->capacity = 16;
+    list->count = 0;
+    list->memberships = (ClubMembership*)malloc(sizeof(ClubMembership) * list->capacity);
+    if (!list->memberships) {
+        printf("error: could not allocate memory for memberships array\n");
+        free(list);
+        return NULL;
+    }
+    return list;
+}
 
+void membership_list_destroy(MembershipList* list) {
+    if (list == NULL) {
+        return;
+    }
+    if (list->memberships != NULL) {
+        free(list->memberships);
+    }
+    free(list);
+}
+
+int membership_list_add(MembershipList* list, ClubMembership membership) {
+    if (list == NULL || list->memberships == NULL) {
+        printf("error: invalid arguments to membership_list_add\n");
+        return 0;
+    }
+    
+    if (list->count >= list->capacity) {
+        int new_capacity = list->capacity * 2;
+        ClubMembership* new_memberships = (ClubMembership*)realloc(list->memberships, sizeof(ClubMembership) * new_capacity);
+        if (!new_memberships) {
+            printf("error: could not allocate more memory for memberships\n");
+            return 0;
+        }
+        list->memberships = new_memberships;
+        list->capacity = new_capacity;
+    }
+    
+    list->memberships[list->count++] = membership;
+    return 1;
+}
+
+int membership_list_remove(MembershipList* list, int membership_id) {
+    if (list == NULL || list->memberships == NULL) {
+        printf("error: invalid arguments to membership_list_remove\n");
+        return 0;
+    }
+    
+    for (int i = 0; i < list->count; i++) {
+        if (list->memberships[i].id == membership_id) {
+            for (int j = i; j < list->count - 1; j++) {
+                list->memberships[j] = list->memberships[j + 1];
+            }
+            list->count--;
+            return 1;
+        }
+    }
+    printf("error: membership with id %d not found\n", membership_id);
+    return 0;
+}
+
+ClubMembership* membership_list_find_by_id(MembershipList* list, int membership_id) {
+    if (list == NULL || list->memberships == NULL) {
+        printf("error: invalid arguments to membership_list_find_by_id\n");
+        return NULL;
+    }
+    
+    for (int i = 0; i < list->count; i++) {
+        if (list->memberships[i].id == membership_id) {
+            return &list->memberships[i];
+        }
+    }
+    return NULL;
+}
 
 int club_list_save_to_file(ClubList* list, const char* filename) {
     if (list == NULL || list->clubs == NULL || filename == NULL) {
@@ -184,3 +263,4 @@ int membership_list_load_from_file(MembershipList* list, const char* filename){
     fclose(file);
     return 1;
 }
+
