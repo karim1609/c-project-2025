@@ -5,8 +5,7 @@
 #include "config.h"
 #include "crypto.h"
 #include "ui.h"
-#include "file.h"
-#include "report.h"
+#include "file_manager.h"
 #include "stats.h"
 #include "auth.h"
 #include "club.h"
@@ -113,6 +112,39 @@ AttendanceRecord* attendance_list_find_by_course_date(AttendanceList* list, int 
     }
     return NULL;
 }
+
+int mark_attendance(AttendanceList* list, int student_id, int course_id, time_t date, int status, int teacher_id){
+    if(list == NULL){
+        printf("erreur la list est nulle ");
+        return -1;
+    }
+    if(list->count < list->capacity){
+        int new_capacity = (list->capacity == 0) ? 10 : list->capacity * 2;
+    }
+
+    AttendanceRecord* newblock = (AttendanceRecord *)realloc(list->records , new_capacity *sizeof(AttendanceRecord));
+    if(!newblock){
+        printf("erreur de reallocation ");
+        return -1;
+    }
+    AttendanceRecord newrecord;
+
+    newrecord.course_id = list->count + 1 ;
+    newrecord.student_id = student_id ;
+    newrecord.course_id = course_id ;
+    newrecord.date = date;
+    newrecord.status = status;
+    newrecord.teacher_id = teacher_id ;
+    strcpy(newRecord.reason, ""); 
+    newRecord.recorded_time = time(NULL); // temps exacte d'enregistrement 
+
+    list->records[list->count] = newrecord;
+    list->count ++;
+
+    return 0;
+
+}
+
 
 
 int attendance_list_save_to_file(AttendanceList* list, const char* filename) {

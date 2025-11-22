@@ -223,6 +223,13 @@ ClubMembership* membership_list_find_by_id(MembershipList* list, int membership_
     return NULL;
 }
 
+
+
+
+
+
+
+
 int club_list_save_to_file(ClubList* list, const char* filename) {
     if (list == NULL || list->clubs == NULL || filename == NULL) {
         printf("error: invalid arguments to club_list_save_to_file\n");
