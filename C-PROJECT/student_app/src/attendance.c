@@ -144,6 +144,25 @@ int mark_attendance(AttendanceList* list, int student_id, int course_id, time_t 
     return 0;
 
 }
+int update_attendance(AttendanceList* list, int record_id, int new_status, const char* reason){
+    if(list == NULL){
+        printf("erreur la liste est nulle !!");
+        return -1;
+    }
+    
+    for(int i = 0 ; i < list->count ; i++){
+        if(list->records[i].id == record_id){
+            list->records[i].status = new_status ;
+            if(reason != NULL){
+            strncpy(list->records[i].reason , reason , 199);
+            list->records[i].reason[199] = '\0';
+            }
+            return 0;
+        }
+    }
+   return -1 ; //record non trouver 
+}
+
 
 
 
