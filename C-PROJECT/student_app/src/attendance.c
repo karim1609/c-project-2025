@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "attendance.h"
 #include "config.h"
 #include "crypto.h"
@@ -26,17 +27,16 @@ AttendanceList* attendance_list_create() {
     return list;
 }
 
-void attendance_list_destroy(AttendanceList **list) {
-    if (list == NULL || *list == NULL)
+void attendance_list_destroy(AttendanceList* list) {
+    if (list == NULL)
         return;
-    if ((*list)->records) {
-        free((*list)->records);
-        (*list)->records = NULL;
+    if (list->records) {
+        free(list->records);
+        list->records = NULL;
     }
-    (*list)->count = 0;
-    (*list)->capacity = 0;
-    free(*list);
-    *list = NULL;
+    list->count = 0;
+    list->capacity = 0;
+    free(list);
 }
 
 int attendance_list_add(AttendanceList *list, AttendanceRecord record) {
@@ -118,31 +118,42 @@ int mark_attendance(AttendanceList* list, int student_id, int course_id, time_t 
         printf("erreur la list est nulle ");
         return -1;
     }
-    if(list->count < list->capacity){
+    
+    // Check if we need to reallocate
+    if(list->count >= list->capacity){
         int new_capacity = (list->capacity == 0) ? 10 : list->capacity * 2;
+        AttendanceRecord* newblock = (AttendanceRecord *)realloc(list->records, new_capacity * sizeof(AttendanceRecord));
+        if(!newblock){
+            printf("erreur de reallocation ");
+            return -1;
+        }
+        list->records = newblock;
+        list->capacity = new_capacity;
     }
-
-    AttendanceRecord* newblock = (AttendanceRecord *)realloc(list->records , new_capacity *sizeof(AttendanceRecord));
-    if(!newblock){
-        printf("erreur de reallocation ");
-        return -1;
-    }
+    
     AttendanceRecord newrecord;
-
-    newrecord.course_id = list->count + 1 ;
-    newrecord.student_id = student_id ;
-    newrecord.course_id = course_id ;
+    
+    // Find the next available ID
+    int max_id = 0;
+    for(int i = 0; i < list->count; i++){
+        if(list->records[i].id > max_id){
+            max_id = list->records[i].id;
+        }
+    }
+    
+    newrecord.id = max_id + 1;
+    newrecord.student_id = student_id;
+    newrecord.course_id = course_id;
     newrecord.date = date;
     newrecord.status = status;
-    newrecord.teacher_id = teacher_id ;
-    strcpy(newRecord.reason, ""); 
-    newRecord.recorded_time = time(NULL); // temps exacte d'enregistrement 
+    newrecord.teacher_id = teacher_id;
+    strcpy(newrecord.reason, ""); 
+    newrecord.recorded_time = time(NULL); // temps exacte d'enregistrement 
 
     list->records[list->count] = newrecord;
-    list->count ++;
+    list->count++;
 
     return 0;
-
 }
 int update_attendance(AttendanceList* list, int record_id, int new_status, const char* reason){
     if(list == NULL){
@@ -204,9 +215,71 @@ int get_attendance_for_date(AttendanceList* list,int course_id,time_t date,Atten
     return 0; 
 }
 
+void attendance_list_display_all(AttendanceList* list) {
+    if (list == NULL || list->records == NULL) {
+        printf("Error: Invalid attendance list\n");
+        return;
+    }
+    
+    if (list->count == 0) {
+        printf("Attendance list is empty\n");
+        return;
+    }
+    
+    printf("\n=== ALL ATTENDANCE RECORDS ===\n");
+    printf("Total records: %d\n\n", list->count);
+    
+    for (int i = 0; i < list->count; i++) {
+        printf("Record %d:\n", i + 1);
+        attendance_display_record(&(list->records[i]));
+        printf("--------------------\n");
+    }
+}
 
-
-
+void attendance_display_record(AttendanceRecord* record) {
+    if (record == NULL) {
+        printf("Error: Invalid attendance record\n");
+        return;
+    }
+    
+    char date_str[64];
+    char recorded_time_str[64];
+    struct tm* date_tm = localtime(&(record->date));
+    struct tm* recorded_tm = localtime(&(record->recorded_time));
+    
+    strftime(date_str, sizeof(date_str), "%Y-%m-%d", date_tm);
+    strftime(recorded_time_str, sizeof(recorded_time_str), "%Y-%m-%d %H:%M:%S", recorded_tm);
+    
+    const char* status_str;
+    switch (record->status) {
+        case ATTENDANCE_ABSENT:
+            status_str = "Absent";
+            break;
+        case ATTENDANCE_PRESENT:
+            status_str = "Present";
+            break;
+        case ATTENDANCE_LATE:
+            status_str = "Late";
+            break;
+        case ATTENDANCE_EXCUSED:
+            status_str = "Excused";
+            break;
+        default:
+            status_str = "Unknown";
+            break;
+    }
+    
+    printf("  ID: %d\n", record->id);
+    printf("  Student ID: %d\n", record->student_id);
+    printf("  Course ID: %d\n", record->course_id);
+    printf("  Date: %s\n", date_str);
+    printf("  Status: %s (%d)\n", status_str, record->status);
+    printf("  Teacher ID: %d\n", record->teacher_id);
+    printf("  Recorded Time: %s\n", recorded_time_str);
+    if (strlen(record->reason) > 0) {
+        printf("  Reason: %s\n", record->reason);
+    }
+}
 
 int attendance_list_save_to_file(AttendanceList* list, const char* filename) {
     if (!list || !filename)
