@@ -163,6 +163,48 @@ int update_attendance(AttendanceList* list, int record_id, int new_status, const
    return -1 ; //record non trouver 
 }
 
+int get_attendance_for_date(AttendanceList* list,int course_id,time_t date,AttendanceRecord** records,int* count){
+
+    if (list == NULL || records == NULL || count == NULL) {
+        return -1; 
+    }
+
+    *count = 0;     
+    *records = NULL; 
+    
+
+   
+    for (int i = 0; i < list->count; i++) {
+        if (list->records[i].course_id == course_id && list->records[i].date == date){
+            (*count)++;
+        }
+    }
+
+
+    if (*count == 0) {
+        return 0; 
+    }
+
+  
+    *records = malloc(sizeof(AttendanceRecord) * (*count));
+    if (*records == NULL) {
+        return -1; 
+    }
+
+    int index = 0;
+    for (int i = 0; i < list->count; i++) {
+        if (list->records[i].course_id == course_id &&
+            list->records[i].date == date)
+        {
+            (*records)[index] = list->records[i];
+            index++;
+        }
+    }
+
+    return 0; 
+}
+
+
 
 
 
