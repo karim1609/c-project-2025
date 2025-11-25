@@ -595,3 +595,4 @@ int leave_club(MembershipList* list, int membership_id) {
         return 0;
     return membership_list_remove(list, membership_id);
 }
+
