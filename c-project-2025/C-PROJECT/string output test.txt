@@ -1,0 +1,9 @@
+char text[100];
+char input[] = "Hello,World,Test";
+
+// Example 1: Read until comma
+sscanf(input, "%[^,]", text);
+// text = "Hello" (stops at first comma)
+
+// Example 2: Without ^ - this would be WRONG
+// %[,] would try to read only commas, which doesn't make sense here
