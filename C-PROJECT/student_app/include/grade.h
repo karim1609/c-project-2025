@@ -6,152 +6,101 @@
 #include <string.h>
 #include <time.h>
 #include "config.h"
-
-// Grade structure
+#include "crypto.h"
 typedef struct {
     int id;
-    int student_id;
-    int course_id;
-    char course_name[MAX_COURSE_LENGTH];
-    GradeLevel grade_level;
-    float numeric_grade;
-    char assignment_name[100];
-    time_t date_assigned;
-    time_t date_due;
-    time_t date_submitted;
-    int is_submitted;
-    int is_late;
-    char comments[500];
-    int teacher_id;
-} Grade;
-
-// Grade list structure
+    char nom[MAX_NAME_LENGTH];
+    char description[MAX_DESC_LENGTH];
+    int heures_cours;
+    int heures_td;
+    int heures_tp;
+    int niveau;
+    int  filiere;
+    int semestre;
+    char nom_prenom_enseignent[50];
+   } Module;
 typedef struct {
-    Grade* grades;
+    Module* cours;
     int count;
     int capacity;
-} GradeList;
-
-// Course structure
+    char filename[256];
+} ListeModules;
 typedef struct {
-    int id;
-    char name[MAX_COURSE_LENGTH];
-    char code[20];
-    char description[200];
-    int credits;
-    int teacher_id;
-    int semester;
-    int year;
-    int is_active;
-} Course;
-
-// Course list structure
+    int id_examen;
+    int id_module;
+    char nom_module[20];
+    time_t date_examen;
+    int duree;
+} Examen;
 typedef struct {
-    Course* courses;
+    Examen* exam;
     int count;
     int capacity;
-} CourseList;
-
-// Grade management functions
-GradeList* grade_list_create(void);
-void grade_list_destroy(GradeList* list);
-int grade_list_add(GradeList* list, Grade grade);
-int grade_list_remove(GradeList* list, int grade_id);
-Grade* grade_list_find_by_id(GradeList* list, int grade_id);
-Grade* grade_list_find_by_student(GradeList* list, int student_id);
-Grade* grade_list_find_by_course(GradeList* list, int course_id);
-void grade_list_display_all(GradeList* list);
-void grade_list_display_student_grades(GradeList* list, int student_id);
-void grade_list_display_course_grades(GradeList* list, int course_id);
-
-// Grade calculations
-float calculate_student_gpa(GradeList* list, int student_id);
-float calculate_course_average(GradeList* list, int course_id);
-float calculate_class_average(GradeList* list, int course_id);
-int count_passing_grades(GradeList* list, int student_id);
-int count_failing_grades(GradeList* list, int student_id);
-
-// Grade validation
-int grade_validate_numeric(float grade);
-int grade_validate_level(GradeLevel level);
-int grade_validate_assignment(const char* assignment_name);
-int grade_validate_dates(time_t assigned, time_t due, time_t submitted);
-
-// Grade input/output
-Grade grade_input_new(int student_id, int course_id);
-void grade_input_edit(Grade* grade);
-void grade_display(Grade* grade);
-void grade_display_summary(GradeList* list, int student_id);
-
-// Course management functions
-CourseList* course_list_create(void);
-void course_list_destroy(CourseList* list);
-int course_list_add(CourseList* list, Course course);
-int course_list_remove(CourseList* list, int course_id);
-Course* course_list_find_by_id(CourseList* list, int course_id);
-Course* course_list_find_by_code(CourseList* list, const char* code);
-Course* course_list_find_by_name(CourseList* list, const char* name);
-void course_list_display_all(CourseList* list);
-void course_list_display_course(Course* course);
-
-// Course validation
-int course_validate_name(const char* name);
-int course_validate_code(const char* code);
-int course_validate_credits(int credits);
-int course_validate_semester(int semester);
-
-// Course input/output
-Course course_input_new(void);
-void course_input_edit(Course* course);
-void course_display_summary(CourseList* list);
-
-// Grade statistics
+    char filename[256];
+}liste_examen;
 typedef struct {
-    int total_students;
-    int passing_students;
-    int failing_students;
-    float average_grade;
-    float highest_grade;
-    float lowest_grade;
-    int total_assignments;
-    int submitted_assignments;
-    int late_submissions;
-} GradeStatistics;
-
-GradeStatistics* calculate_grade_statistics(GradeList* list, int course_id);
-void display_grade_statistics(GradeStatistics* stats);
-void free_grade_statistics(GradeStatistics* stats);
-
-// Grade reports
-int generate_student_report(GradeList* list, int student_id, const char* filename);
-int generate_course_report(GradeList* list, int course_id, const char* filename);
-int generate_class_report(GradeList* list, int course_id, const char* filename);
-int generate_gpa_report(GradeList* list, const char* filename);
-
-// File operations
-int grade_list_save_to_file(GradeList* list, const char* filename);
-int grade_list_load_from_file(GradeList* list, const char* filename);
-int course_list_save_to_file(CourseList* list, const char* filename);
-int course_list_load_from_file(CourseList* list, const char* filename);
-
-// Grade sorting
-void grade_list_sort_by_student(GradeList* list);
-void grade_list_sort_by_course(GradeList* list);
-void grade_list_sort_by_date(GradeList* list);
-void grade_list_sort_by_grade(GradeList* list);
-
-// Utility functions
-const char* grade_level_to_string(GradeLevel level);
-GradeLevel string_to_grade_level(const char* grade_str);
-float grade_level_to_numeric(GradeLevel level);
-GradeLevel numeric_to_grade_level(float numeric);
-int is_grade_passing(GradeLevel level);
-int is_grade_failing(GradeLevel level);
-
-// Grade analysis
-int analyze_student_performance(GradeList* list, int student_id);
-int analyze_course_performance(GradeList* list, int course_id);
-int identify_struggling_students(GradeList* list, int course_id, float threshold);
-int identify_excellent_students(GradeList* list, int course_id, float threshold);
-
-#endif // GRADE_H
+    int id_etudiant;
+    int id_examen;
+    float note_obtenue;
+    int present;
+} Note;
+typedef struct {
+Note *note;
+int count;
+int capacity;
+char file_name[256];
+}liste_note;
+//fct examen
+Examen* creer_examen();
+void afficher_examen(Examen *E);
+int examen_ajouter(liste_examen* liste, Examen *ex);
+int examen_supprimer_par_id(liste_examen* liste,int id_examen);
+int examen_supprimer_par_nom(liste_examen* liste,char* nom_examen);
+void afficher_liste_examens(liste_examen *liste) ;
+liste_examen* cree_liste_examen();
+Examen* chercher_examen_par_id(liste_examen* liste,int id);
+Examen* chercher_examen_par_nom(liste_examen* liste,char* nom);
+void modidier_examen(liste_examen liste);
+int sauvegarder_liste_examen_ds_file(liste_examen *liste);
+int liste_examen_a_partir_file(liste_examen *liste);
+int trie_liste_examen_id(liste_examen liste ,int n );
+int trie_liste_examen_nom(int n,liste_examen liste);
+//fct note
+liste_note* creer_liste_note(int capacite);
+Note* cree_note() ;
+int note_ajouter(liste_note *liste, Note *n);
+void afficher_note(Note *n);
+void afficher_liste_notes(liste_note *liste);
+Note* chercher_note(liste_note *liste, int id_etudiant, int id_examen);
+void afficher_notes_etudiant(liste_note *liste, int id_etudiant);
+void afficher_notes_examen(liste_note *liste, int id_examen);
+void modifier_note(liste_note *liste);
+int note_supprimer(liste_note *liste, int id_etudiant, int id_examen);
+float calculer_moyenne_etudiant(liste_note *liste, int id_etudiant);
+float calculer_moyenne_examen(liste_note *liste, int id_examen);
+void statistiques_examen(liste_note *liste, int id_examen);
+int sauvegarder_notes_ds_file(liste_note *liste);
+int charger_notes_depuis_file(liste_note *liste);
+void trier_notes_par_etudiant(liste_note *liste);
+void detruire_liste_notes(liste_note **liste);
+//fct module
+ Module* cree_module();
+ ListeModules* liste_cours_creer();
+ void liste_cours_detruire(ListeModules** liste);
+ int cours_ajouter(ListeModules* liste, Module cours);
+ int cours_supprimer_par_nom(ListeModules* liste, char* cours_nom);
+ int cours_supprimer_par_id(ListeModules *liste, int cours_id);
+ Module* cours_rechercher_par_id(ListeModules* liste, int cours_id);
+ void cours_afficher(Module* m);
+ void liste_cours_afficher(ListeModules* liste);
+ void cours_afficher_depuis_un_liste_par_id(ListeModules liste,int id);
+ void cours_afficher_depuis_un_liste_par_nom(ListeModules liste,char *nom);
+ Module* chercher_module_par_nom(ListeModules liste,char* nom);
+ Module* chercher_module_par_id(ListeModules liste,int id);
+ void modidier_cours(ListeModules liste);
+ int sauvegarder_modules_ds_file(ListeModules liste);
+ int remplire_liste_appartit_file(ListeModules *liste);
+ int trie_liste_id(ListeModules liste ,int n );
+ int trie_par_nom(int n,ListeModules liste);
+ void liste_cours_niveau(ListeModules liste,int niveaux);
+ void liste_cours_filiere(ListeModules liste,int filiere);
