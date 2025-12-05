@@ -115,7 +115,7 @@ void afficher_examen(Examen *E) {
            E->duree);
 }
 int examen_ajouter(liste_examen* liste, Examen *ex){
-   if(liste->count<=liste->capacity){
+   if(liste->count<liste->capacity){
     (liste)->exam[liste->count++] =*ex;
     return(1);}
 
@@ -125,7 +125,7 @@ int examen_supprimer_par_id(liste_examen* liste,int id_examen){
 if(liste->count!=0){
         for(int i=0;i<liste->count;i++){
             if((liste)->exam[i].id_examen==id_examen){
-                 for(int j=i;j<liste->count;j++)
+                 for(int j=i;j<liste->count-1;j++)
                    (liste)->exam[j]=(liste)->exam[j+1];
                    liste->count--;
                  return(1);
@@ -140,7 +140,7 @@ int examen_supprimer_par_nom(liste_examen* liste,char* nom_examen){
 if(liste->count!=0){
         for(int i=0;i<liste->count;i++){
             if(strcmp((liste)->exam[i].nom_module,nom_examen)==0){
-                 for(int j=i;j<liste->count;j++)
+                 for(int j=i;j<liste->count-1;j++)
                    (liste)->exam[j]=(liste)->exam[j+1];
                    liste->count--;
                  return(1);
@@ -168,8 +168,7 @@ void afficher_liste_examens(liste_examen *liste) {
 
     for (int i = 0; i < liste->count; i++) {
             printf("+-----+-------------------------+----------+----------+----------+-----+-----------------------------+-----------+-----------+\n");
-        Examen * E=(Examen*)malloc(sizeof(Examen));
-        E = &liste->exam[i];
+        Examen * E = &liste->exam[i];
         struct tm *info = localtime(&E->date_examen);
         printf("| %-8d | %-8d | %-18s | %02d/%02d/%04d | %02d:%02d:%02d | %-8d |\n",
            E->id_examen,
@@ -190,7 +189,7 @@ liste_examen* cree_liste_examen(){
     liste_examen * liste=(liste_examen*)malloc(sizeof(liste_examen));
     liste->capacity=3000;
     liste->count=0;
-    liste->exam=(Examen*)malloc(sizeof(Examen));
+    liste->exam=(Examen*)malloc(liste->capacity*sizeof(Examen));
     strcpy(liste->filename,"liste_des_examen.txt");
     return(liste);
 }
@@ -212,6 +211,10 @@ void modidier_examen(liste_examen liste){
     int choix,id;
     printf("Enter exam ID: "); scanf("%d",&id);
     Examen *m=chercher_examen_par_id(&liste,id);
+    if(m==NULL){
+        printf("Exam not found!\n");
+        return;
+    }
     printf("\n-------------------------------------------------------------------------\n");
     printf("Choose the element you want to change:\n");
     printf("1 - Id\n");
@@ -237,7 +240,6 @@ void modidier_examen(liste_examen liste){
         case 4:
             printf("New exam date: ");
                 struct tm tm_date = {0};
-    Examen * E=(Examen*)malloc(sizeof(Examen));
     printf("Date (day month year): ");
     scanf("%d %d %d", &tm_date.tm_mday, &tm_date.tm_mon, &tm_date.tm_year);
     tm_date.tm_mon -= 1;
@@ -245,7 +247,7 @@ void modidier_examen(liste_examen liste){
 
     printf("Time (h m s): ");
     scanf("%d %d %d", &tm_date.tm_hour, &tm_date.tm_min, &tm_date.tm_sec);
-    E->date_examen = mktime(&tm_date);
+    m->date_examen = mktime(&tm_date);
             break;
         case 5:
             printf("New duration: ");
@@ -278,22 +280,31 @@ return(1);
 }
 int liste_examen_a_partir_file(liste_examen *liste){
 FILE *p=fopen(liste->filename,"r");
+if(p==NULL) return(0);
 int i=0;
-while(!feof(p)){
-         struct tm info ={0};;
-    fscanf(p,"| %d | %d | %s | %d/%d/%d | %d:%d:%d | %d |",
+while(i<liste->capacity){
+         struct tm info ={0};
+         int day,mon,year,hour,min,sec;
+    int n=fscanf(p,"| %d | %d | %19[^|] | %d/%d/%d | %d:%d:%d | %d |",
            &liste->exam[i].id_examen,
            &liste->exam[i].id_module,
            liste->exam[i].nom_module,
-           &info.tm_mday,
-           &info.tm_mon + 1,
-           &info.tm_year + 1900,
-           &info.tm_hour,
-           &info.tm_min,
-           &info.tm_sec,
+           &day,
+           &mon,
+           &year,
+           &hour,
+           &min,
+           &sec,
            &liste->exam[i].duree);
+    if(n!=10) break;
+    info.tm_mday=day;
+    info.tm_mon=mon-1;
+    info.tm_year=year-1900;
+    info.tm_hour=hour;
+    info.tm_min=min;
+    info.tm_sec=sec;
+    liste->exam[i].date_examen = mktime(&info);
            i++;
-           liste->exam[i].date_examen = mktime(&info);
 }
 liste->count=i;
 fclose(p);
@@ -710,12 +721,13 @@ int charger_notes_depuis_file(liste_note *liste) {
         return 0;
     }
 int i=0;
-   while(!feof(p)){
-        fscanf(p, "%d,%d,%f,%d",
+   while(i<liste->capacity){
+        int n=fscanf(p, "%d,%d,%f,%d",
                            &liste->note[i].id_etudiant,
                            &liste->note[i].id_examen,
                            &liste->note[i].note_obtenue,
                            &liste->note[i].present);
+        if(n!=4) break;
         i++;
    }
   liste->count=i;
@@ -763,10 +775,10 @@ void detruire_liste_notes(liste_note **liste) {
     printf("Enter the number of practical hours:\t");scanf("%d",&cour->heures_tp);
     do {
     printf("Which level does it concern:\n1-FIRST_YEAR_LEVEL.\n2-SECOND_YEAR_LEVEL.\n3-FIRST_YEAR_CYCLE_LEVEL.\n4-SECOND_YEAR_CYCLE_LEVEL.\n5-SECOND_YEAR_CYCLE_LEVEL.\n6-THIRD_YEAR_CYCLE_LEVEL.\n7-DOCTORATE_LEVEL\n num:");scanf("%d",&cour->niveau);}
-    while((cour->niveau>7)&&(cour->niveau<1));
+    while((cour->niveau>7)||(cour->niveau<1));
           do{
     printf("Which major does it concern:\n1-PREPARATORY_YEARS_TO_ENGINEERING_CYCLE.\n2-COMPUTER_ENGINEERING.\n3-CIVIL_ENGINEERING.\n4-WATER_ENVIRONMENT_ENGINEERING.\n5-ENERGETIC_ENGINEERING.\n6-MECHANICAL_ENGINEERING \n num:");scanf("%d",&cour->filiere);
-          }  while((cour->filiere>7)&&(cour->filiere<1));
+          }  while((cour->filiere>6)||(cour->filiere<1));
    printf("For which semester:\t");scanf("%d",&cour->semestre);
        printf("Teacher's full name:\t");scanf(" %[^\n]",cour->nom_prenom_enseignent);
        return(cour);
@@ -778,18 +790,20 @@ ListeModules* liste_cours_creer(){
     coursliste->cours=(Module*)malloc(sizeof(Module)*300);
     coursliste->count=0;
    coursliste->capacity=300;
-   strcpy(coursliste->filename,"liste_des_etudiant.txt");
+   strcpy(coursliste->filename,"liste_des_modules.txt");
    return(coursliste);
 }
 void liste_cours_detruire(ListeModules** liste){
+    if(liste==NULL || *liste==NULL) return;
     free((*liste)->cours);
     (*liste)->cours=NULL;
     (*liste)->count=0;
     (*liste)->capacity=0;
+    free(*liste);
     (*liste)=NULL;
 }
 int cours_ajouter(ListeModules* liste, Module cours){
-   if(liste->count<=liste->capacity){
+   if(liste->count<liste->capacity){
     (liste)->cours[liste->count++] =cours;
     return(1);}
 
@@ -799,7 +813,7 @@ int cours_supprimer_par_nom(ListeModules* liste, char* cours_nom){
 if(liste->count!=0){
         for(int i=0;i<liste->count;i++){
             if(strcmp((liste)->cours[i].nom,cours_nom)==0){
-                 for(int j=i;j<liste->count;j++)
+                 for(int j=i;j<liste->count-1;j++)
                    (liste)->cours[j]=(liste)->cours[j+1];
                    liste->count--;
                  return(1);
@@ -814,7 +828,7 @@ int cours_supprimer_par_id(ListeModules *liste, int cours_id){
 if(liste->count!=0){
         for(int i=0;i<liste->count;i++){
             if(liste->cours[i].id==cours_id){
-                 for(int j=i;j<liste->count;j++)
+                 for(int j=i;j<liste->count-1;j++)
                    (liste)->cours[j]=(liste)->cours[j+1];
                    liste->count--;
                  return(1);
@@ -905,8 +919,7 @@ void cours_afficher_depuis_un_liste_par_id(ListeModules liste,int id){
             m.nom_prenom_enseignent,
             m.filiere,
             m.niveau
-        );}
-        break;
+        ); return;}
     }
     printf("The course does not exist in the list");
 }
@@ -931,8 +944,7 @@ void cours_afficher_depuis_un_liste_par_nom(ListeModules liste,char *nom){
             m.nom_prenom_enseignent,
             m.filiere,
             m.niveau
-        );}
-        break;
+        ); return;}
     }
     printf("The course does not exist in the list");
 }
@@ -1047,7 +1059,7 @@ int remplire_liste_appartit_file(ListeModules *liste){
     while (!feof(p)) {
         Module m;
 
-        int n = fscanf(p,"%d, %[^,], %[^,],%d,%d,%d,%d,%d,%d, %[^\n]\n",
+        int n = fscanf(p,"%d,%[^,],%[^,],%d,%d,%d,%d,%d,%d,%[^\n]\n",
             &m.id,
             m.nom,
             m.description,
