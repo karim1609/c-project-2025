@@ -141,6 +141,7 @@ void backup_list_sort_by_name(BackupList* list);
 #define MAX_BACKUP_PATH_LENGTH 512
 #define DEFAULT_BACKUP_RETENTION_DAYS 30
 #define MAX_AUTO_BACKUPS 10
+#define MAX_BACKUP_CAPACITY 1000
 
 // Backup types
 #define BACKUP_TYPE_FULL "full"
