@@ -1,5 +1,41 @@
 #include "stats.h"
 
+// Type aliases to match header declarations
+typedef liste_note GradeList;
+typedef ListeModules CourseList;
+typedef Note Grade;
+
+// Helper function to calculate student GPA from note list
+static float calculate_student_gpa_from_notes(GradeList* notes, int student_id) {
+    if (!notes || notes->count == 0) return -1.0f;
+    
+    float total_grade = 0.0f;
+    int count = 0;
+    
+    for (int i = 0; i < notes->count; i++) {
+        if (notes->note[i].id_etudiant == student_id && notes->note[i].present == 1) {
+            // Convert 0-20 scale to 0-4 GPA scale
+            float gpa_value = (notes->note[i].note_obtenue / 20.0f) * 4.0f;
+            total_grade += gpa_value;
+            count++;
+        }
+    }
+    
+    if (count == 0) return -1.0f;
+    return total_grade / count;
+}
+
+// Helper function to convert grade level to numeric GPA
+static float grade_level_to_numeric(int grade_level) {
+    switch (grade_level) {
+        case 4: return 4.0f;  // GRADE_A
+        case 3: return 3.0f;  // GRADE_B
+        case 2: return 2.0f;  // GRADE_C
+        case 1: return 1.0f;  // GRADE_D
+        case 0: return 0.0f;  // GRADE_F
+        default: return -1.0f;
+    }
+}
 
 SystemStats* calculate_system_stats(StudentList* students, CourseList* courses, 
                                    GradeList* grades, AttendanceList* attendance, 
@@ -144,7 +180,7 @@ StudentStats* calculate_student_stats(StudentList* students, GradeList* grades) 
         
         // Calculate GPA for each student
         for (int i = 0; i < students->count; i++) {
-            float gpa = calculate_student_gpa(grades, students->students[i].id);
+            float gpa = calculate_student_gpa_from_notes(grades, students->students[i].id);
             if (gpa >= 0) {
                 student_gpas[student_gpa_count].student_id = students->students[i].id;
                 student_gpas[student_gpa_count].gpa = gpa;
@@ -153,6 +189,7 @@ StudentStats* calculate_student_stats(StudentList* students, GradeList* grades) 
                 
                 // GPA distribution
                 int gpa_index = (int)(gpa / 1.0);
+                if (gpa_index < 0) gpa_index = 0;
                 if (gpa_index >= 5) gpa_index = 4;
                 stats->gpa_distribution[gpa_index]++;
             }
@@ -226,8 +263,8 @@ void display_student_stats(StudentStats* stats) {
     printf("GPA Distribution:\n");
     const char* gpa_ranges[] = {"0.0-1.0", "1.0-2.0", "2.0-3.0", "3.0-4.0", "4.0+"};
     for (int i = 0; i < 5; i++) {
-        if (stats->gpa_distribution[i] > 0) {
-            printf("  %s: %d students\n", gpa_ranges[i], stats->gpa_distribution[i]);
+        if ((int)stats->gpa_distribution[i] > 0) {
+            printf("  %s: %d students\n", gpa_ranges[i], (int)stats->gpa_distribution[i]);
         }
     }
     printf("\n");
@@ -272,17 +309,27 @@ GradeStats* calculate_grade_stats(GradeList* grades, CourseList* courses) {
     
     stats->total_grades = grades->count;
     stats->highest_gpa = 0.0;
-    stats->lowest_gpa = 5.0;
+    stats->lowest_gpa = 4.1f;  // Initialize higher than max possible GPA (4.0)
     
     float total_gpa = 0;
     int gpa_count = 0;
     
-    // Analyze each grade
+    // Analyze each grade (using Note structure from grade.h)
     for (int i = 0; i < grades->count; i++) {
-        Grade* g = &grades->grades[i];
+        Grade* g = &grades->note[i];
+        
+        if (g->present == 0) continue;  // Skip absent students
+        
+        // Convert 0-20 scale to grade level (A=16-20, B=14-15, C=12-13, D=10-11, F=0-9)
+        int grade_level;
+        if (g->note_obtenue >= 16) grade_level = GRADE_A;
+        else if (g->note_obtenue >= 14) grade_level = GRADE_B;
+        else if (g->note_obtenue >= 12) grade_level = GRADE_C;
+        else if (g->note_obtenue >= 10) grade_level = GRADE_D;
+        else grade_level = GRADE_F;
         
         // Count by grade level
-        switch (g->grade_level) {
+        switch (grade_level) {
             case GRADE_A: stats->grades_by_level[0]++; break;
             case GRADE_B: stats->grades_by_level[1]++; break;
             case GRADE_C: stats->grades_by_level[2]++; break;
@@ -291,14 +338,14 @@ GradeStats* calculate_grade_stats(GradeList* grades, CourseList* courses) {
         }
         
         // Count passing/failing
-        if (g->grade_level != GRADE_F) {
+        if (grade_level != GRADE_F) {
             stats->passing_grades++;
         } else {
             stats->failing_grades++;
         }
         
-        // Calculate GPA statistics
-        float gpa = grade_level_to_numeric(g->grade_level);
+        // Calculate GPA statistics (convert 0-20 to 0-4 scale)
+        float gpa = (g->note_obtenue / 20.0f) * 4.0f;
         if (gpa >= 0) {
             total_gpa += gpa;
             gpa_count++;
@@ -315,6 +362,9 @@ GradeStats* calculate_grade_stats(GradeList* grades, CourseList* courses) {
     // Calculate averages
     if (gpa_count > 0) {
         stats->average_gpa = total_gpa / gpa_count;
+    } else {
+        // No valid GPAs found, reset to 0
+        stats->lowest_gpa = 0.0;
     }
     
     if (stats->total_grades > 0) {
@@ -416,7 +466,7 @@ AttendanceStats* calculate_attendance_stats(AttendanceList* attendance) {
     for (int i = 0; i < 12; i++) {
         if (month_counts[i] > 0) {
             stats->attendance_by_month[i] = 
-                stats->attendance_by_month[i] / month_counts[i] * 100.0;
+                (float)stats->attendance_by_month[i] / month_counts[i] * 100.0;
         }
     }
     
@@ -472,8 +522,9 @@ ClubStats* calculate_club_stats(ClubList* clubs, MembershipList* memberships) {
     
     stats->total_clubs = clubs->count;
     
-    int max_members = 0;
-    int min_members = 999999;
+    int max_members = -1;
+    int min_members = -1;
+    int first_active_club_found = 0;
     
     // Analyze each club
     for (int i = 0; i < clubs->count; i++) {
@@ -499,9 +550,12 @@ ClubStats* calculate_club_stats(ClubList* clubs, MembershipList* memberships) {
             max_members = club_members;
             stats->most_popular_club_id = c->id;
         }
-        if (club_members < min_members && c->is_active) {
-            min_members = club_members;
-            stats->least_popular_club_id = c->id;
+        if (c->is_active) {
+            if (!first_active_club_found || club_members < min_members) {
+                min_members = club_members;
+                stats->least_popular_club_id = c->id;
+                first_active_club_found = 1;
+            }
         }
     }
     
@@ -516,7 +570,10 @@ ClubStats* calculate_club_stats(ClubList* clubs, MembershipList* memberships) {
     }
     
     // Calculate average members per club
-    if (stats->total_clubs > 0) {
+    if (stats->active_clubs > 0) {
+        stats->average_members_per_club = 
+            (float)stats->active_memberships / stats->active_clubs;
+    } else if (stats->total_clubs > 0) {
         stats->average_members_per_club = 
             (float)stats->active_memberships / stats->total_clubs;
     }
