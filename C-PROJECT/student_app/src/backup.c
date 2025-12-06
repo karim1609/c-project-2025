@@ -937,3 +937,151 @@ BackupResult restore_file_from_backup(const char* backup_name, const char* file_
     
     return BACKUP_SUCCESS;
 }
+
+// Helper function to extract basename from file path
+static const char* get_basename(const char* path) {
+    const char* basename = strrchr(path, '/');
+    if (basename) {
+        return basename + 1;
+    }
+    #ifdef _WIN32
+    basename = strrchr(path, '\\');
+    if (basename) {
+        return basename + 1;
+    }
+    #endif
+    return path;
+}
+
+BackupResult backup_file(const char* source_file, const char* backup_dir, const char* backup_name) {
+    // Validate parameters
+    if (!source_file || !backup_dir || !backup_name) {
+        fprintf(stderr, "Error: Invalid parameters (NULL pointer)\n");
+        return BACKUP_ERROR_INVALID_PARAMETERS;
+    }
+    
+    if (strlen(source_file) == 0 || strlen(backup_dir) == 0 || strlen(backup_name) == 0) {
+        fprintf(stderr, "Error: Invalid parameters (empty string)\n");
+        return BACKUP_ERROR_INVALID_PARAMETERS;
+    }
+    
+    // Check if source file exists
+    struct stat file_st;
+    if (stat(source_file, &file_st) != 0) {
+        fprintf(stderr, "Error: Source file '%s' does not exist\n", source_file);
+        return BACKUP_ERROR_SOURCE_DIR_NOT_FOUND;
+    }
+    
+    if (S_ISDIR(file_st.st_mode)) {
+        fprintf(stderr, "Error: '%s' is a directory, not a file\n", source_file);
+        return BACKUP_ERROR_INVALID_PARAMETERS;
+    }
+    
+    // Create backup directory if it doesn't exist
+    if (!directory_exists(backup_dir)) {
+        if (create_directory(backup_dir) != 0) {
+            fprintf(stderr, "Error: Failed to create backup directory '%s'\n", backup_dir);
+            return BACKUP_ERROR_CREATE_DIR;
+        }
+    }
+    
+    // Get basename of source file
+    const char* base_name = get_basename(source_file);
+    
+    // Create timestamped backup filename
+    time_t now = time(NULL);
+    struct tm* t = localtime(&now);
+    char timestamp[64];
+    if (t) {
+        snprintf(timestamp, sizeof(timestamp), "%04d%02d%02d_%02d%02d%02d",
+                 t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+                 t->tm_hour, t->tm_min, t->tm_sec);
+    } else {
+        snprintf(timestamp, sizeof(timestamp), "unknown_time");
+    }
+    
+    // Create backup file path
+    char backup_file_path[512];
+    snprintf(backup_file_path, sizeof(backup_file_path), "%s/%s_%s_%s",
+             backup_dir, backup_name, base_name, timestamp);
+    
+    printf("Creating backup of file: %s\n", source_file);
+    printf("Backup location: %s\n", backup_file_path);
+    
+    // Open source file
+    FILE* src = fopen(source_file, "rb");
+    if (!src) {
+        fprintf(stderr, "Error: Cannot open source file '%s'\n", source_file);
+        return BACKUP_ERROR_COPY_FILE;
+    }
+    
+    // Open destination file
+    FILE* dst = fopen(backup_file_path, "wb");
+    if (!dst) {
+        fprintf(stderr, "Error: Cannot create backup file '%s'\n", backup_file_path);
+        fclose(src);
+        return BACKUP_ERROR_COPY_FILE;
+    }
+    
+    // Copy file
+    char buffer[8192];
+    size_t bytes_read;
+    size_t total_bytes = 0;
+    
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), src)) > 0) {
+        size_t bytes_written = fwrite(buffer, 1, bytes_read, dst);
+        if (bytes_written != bytes_read) {
+            fprintf(stderr, "Error: Write failed during backup\n");
+            fclose(src);
+            fclose(dst);
+            remove(backup_file_path);
+            return BACKUP_ERROR_COPY_FILE;
+        }
+        total_bytes += bytes_written;
+    }
+    
+    // Check for read errors
+    if (ferror(src)) {
+        fprintf(stderr, "Error: Read failed during backup\n");
+        fclose(src);
+        fclose(dst);
+        remove(backup_file_path);
+        return BACKUP_ERROR_COPY_FILE;
+    }
+    
+    fclose(src);
+    fclose(dst);
+    
+    // Calculate checksum if available
+    char checksum[65] = "N/A";
+    // Try to calculate checksum using file_manager function
+    if (file_exists(backup_file_path)) {
+        if (calculate_file_checksum(backup_file_path, checksum) != 0) {
+            strcpy(checksum, "N/A");
+        }
+    }
+    
+    // Create metadata file
+    char metadata_file[600];
+    snprintf(metadata_file, sizeof(metadata_file), "%s.meta", backup_file_path);
+    
+    FILE* meta = fopen(metadata_file, "w");
+    if (meta) {
+        fprintf(meta, "Backup Name: %s\n", backup_name);
+        fprintf(meta, "Source File: %s\n", source_file);
+        fprintf(meta, "Backup File: %s\n", backup_file_path);
+        fprintf(meta, "Created: %s", ctime(&now));
+        fprintf(meta, "Size: %zu bytes\n", total_bytes);
+        fprintf(meta, "Checksum: %s\n", checksum);
+        fclose(meta);
+    }
+    
+    printf("\nFile backup completed successfully!\n");
+    printf("Source: %s\n", source_file);
+    printf("Backup: %s\n", backup_file_path);
+    printf("Size: %zu bytes\n", total_bytes);
+    
+    return BACKUP_SUCCESS;
+}
+
+
