@@ -39,7 +39,6 @@ typedef struct {
 // Function declarations
 UserList* user_list_create(void);
 void user_list_destroy(UserList* list);
-int user_list_add(UserList* list, User user);
 int user_list_remove(UserList* list, int user_id);
 User* user_list_find_by_username(UserList* list, const char* username);
 User* user_list_find_by_email(UserList* list, const char* email);
