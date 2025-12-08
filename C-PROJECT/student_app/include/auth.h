@@ -39,6 +39,7 @@ typedef struct {
 // Function declarations
 UserList* user_list_create(void);
 void user_list_destroy(UserList* list);
+int user_list_add(UserList* list, User user);
 int user_list_remove(UserList* list, int user_id);
 User* user_list_find_by_username(UserList* list, const char* username);
 User* user_list_find_by_email(UserList* list, const char* email);
@@ -54,10 +55,9 @@ int auth_reset_password(UserList* list, const char* email);
 
 // Password functions
 void auth_hash_password(const char* password, const char* salt, char* hash);
-int auth_verify_password(const char* password, const char* hash, const char* salt);
 void auth_generate_salt(char* salt);
+int auth_verify_password(const char* password, const char* hash, const char* salt);
 int auth_validate_password_strength(const char* password);
-
 // Session management
 Session* session_create(void);
 void session_destroy(Session* session);
